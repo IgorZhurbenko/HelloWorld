@@ -1,6 +1,22 @@
 // JavaScript source code
+
+function normalizeString(str) {
+    if (!str) return str;
+    return (str[0].toUpperCase() + str.slice(1)).split('_').join(' ');
+}
+
+
+
 class Options {
     constructor(optionsGiven, appendTo, onselect, name) {
+
+        var newRow = document.createElement('tr');
+        var newColumn = document.createElement('td');
+
+        appendTo.appendChild(newRow);
+        newRow.appendChild(newColumn);
+
+
         var selector = document.createElement('select');
 
         var options = optionsGiven.filter(function (item, pos) {
@@ -8,7 +24,7 @@ class Options {
         });
         options.sort();
         if (options.find(elem => elem == "") == undefined) {
-            options.push('');
+            options.unshift('');
         }
 
         this.options = options;
@@ -17,7 +33,7 @@ class Options {
         for (var option of options) {
             var newOption = document.createElement('option');
             newOption.value = option.replace('_', ' ');
-            newOption.innerHTML = option.replace('_',' ');
+            newOption.innerHTML = normalizeString(option.split('__').join('-'));
             selector.appendChild(newOption);
         }
 
@@ -25,8 +41,11 @@ class Options {
         label.innerHTML = name + ': ';
         this.label = label;
 
-        appendTo.appendChild(label);
-        label.appendChild(selector);
+        newColumn.appendChild(label);
+
+        var newColumn = document.createElement('td');
+        newRow.appendChild(newColumn);
+        newColumn.appendChild(selector);
         selector.onchange = onselect;
     }
 
@@ -51,11 +70,17 @@ class Options {
 class OptionsLine {
     constructor(OptionsList, appendTo, optionsNames, bindingWords) {
         var self = this;
-        
+
+        var table = document.createElement('table');
+        table.setAttribute('class', 'table');
+
+        appendTo.appendChild(table);
+        var tbody = document.createElement('tbody');
+        table.appendChild(tbody);
         
         for (var num in OptionsList) {
             var i = Number(num);
-            this['_' + String(i)] = new Options(OptionsList[i], appendTo,
+            this['_' + String(i)] = new Options(OptionsList[i], tbody,
                 function () {
                     var j = 1;
                     while (self['_' + String(Number(this.owner.number) + j)] != undefined) {
@@ -64,12 +89,12 @@ class OptionsLine {
                         self['_' + String(Number(this.owner.number) + j)].switch(
                             isNotEmpty
                             && isNotHidden &&
-                            self['_' + String(Number(this.owner.number + 1) + j)] != undefined)
+                            self['_' + String(Number(this.owner.number + 1) + (j-1))] != undefined)
                         j++;
                     }
                     j = 0;
                     self.signature.innerHTML = "";
-                    while (self['_' + Number(j+1)] != undefined && self['_' + j].Value)
+                    while (self['_' + Number(j)] != undefined && self['_' + j].Value)
                     {
                         var bindingWord = Boolean(bindingWords[j]) ? bindingWords[j] : "";
                         self.signature.innerHTML = self.signature.innerHTML + " " + self['_' + j].Value + " " + bindingWord;
@@ -79,16 +104,27 @@ class OptionsLine {
 
                 }, optionsNames[i]);
             this["_" + i].selector.owner = this["_" + i];
+            this["_" + i].switch(num < 1);
             this["_" + i].number = i;
+
+            if (OptionsList.length - num <= 2) { break; }
         }
 
         this.signature = document.createElement('h4');
         this.signature.style.textAlign = 'center';
         appendTo.appendChild(this.signature);
+
+
     }
 
     GetValue(index) {
         return this['_' + String(index)].Value
+    }
+
+    setVisibilities()
+    {
+        
+
     }
 }
 
